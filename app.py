@@ -28,5 +28,14 @@ def create():
     return new_student
 
 
+@app.route('/students/<int:student_id>', methods=['DELETE'])
+def delete(student_id):
+    if student_id in students.keys():
+        del students[student_id]
+        return {'data': 'Student deleted successfully.'}
+    else:
+        return {'error': 'Student not found'}
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5152, debug=True)
