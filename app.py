@@ -1,50 +1,72 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify, json
+from flask_sqlalchemy import SQLAlchemy
+
+
 from data import students
 
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
+json.provider.DefaultJSONProvider.ensure_ascii = False
+db = SQLAlchemy(app)
+
+
+class Student(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    room = db.Column(db.String(20), nullable=False)
+    
+    def __repr__(self):
+        return f"Student('{self.name}', '{self.email}', '{self.room}')"
+    
+    def as_dict(self):
+        return{c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
 @app.route('/students', methods=['GET'])
 def get():
-    return students
+    students = Student.query.all()
+    return jsonify([student.as_dict() for student in students])
 
 @app.route('/students/<int:student_id>', methods=['GET'])
 def get_student(student_id):
-    return students.get(
-        student_id,
-        {'error': 'Student not found'}
-    )
+    student = Student.query.get(student_id)
+    if student:
+        return student.as_dict()
+    else:
+        return {'error': 'Student not found'}
+
 
 @app.route('/students', methods=['POST'])
 def create():
-    id = sorted(students.keys())[-1] + 1
-    new_student = {
-        'name': request.json['name'],
-        'email': request.json['email'],
-        'room': request.json['room'],
-    }
-    students[id] = new_student
-    return new_student
+    new_student = Student(
+        name=request.json['name'], 
+        email=request.json['email'], 
+        room=request.json['room'])
+    db.session.add(new_student)
+    db.session.commit()
+    return new_student.as_dict()
 
 @app.route('/students/<int:student_id>', methods=['PUT'])
 def update(student_id):
-    if student_id in students.keys():
-        update_student = {
-            'name': request.json['name'],
-            'email': request.json['email'],
-            'room': request.json['room'],
-        }
-        students[student_id] = update_student
-        return update_student
+    student = Student.query.get(student_id)
+    if student:
+       student.name = request.json['name']
+       student.email = request.json['email']
+       student.room = request.json['room']
+       db.session.commit()
+       return {'response': 'Student updated successfully.'}
     else:
         return {'error': 'Student not found'}
 
 @app.route('/students/<int:student_id>', methods=['DELETE'])
 def delete(student_id):
-    if student_id in students.keys():
-        del students[student_id]
-        return {'data': 'Student deleted successfully.'}
+    student = Student.query.get(student_id)
+    if student:
+        db.session.delete(student)
+        db.session.commit()
+        return {'response': 'Student deleted successfully.'}
     else:
         return {'error': 'Student not found'}
 
