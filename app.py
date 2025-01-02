@@ -2,9 +2,6 @@ from flask import Flask, request, jsonify, json
 from flask_sqlalchemy import SQLAlchemy
 
 
-from data import students
-
-
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
 json.provider.DefaultJSONProvider.ensure_ascii = False
