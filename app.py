@@ -27,6 +27,18 @@ def create():
     students[id] = new_student
     return new_student
 
+@app.route('/students/<int:student_id>', methods=['PUT'])
+def update(student_id):
+    if student_id in students.keys():
+        update_student = {
+            'name': request.json['name'],
+            'email': request.json['email'],
+            'room': request.json['room'],
+        }
+        students[student_id] = update_student
+        return update_student
+    else:
+        return {'error': 'Student not found'}
 
 @app.route('/students/<int:student_id>', methods=['DELETE'])
 def delete(student_id):
